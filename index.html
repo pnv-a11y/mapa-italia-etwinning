@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mapa interactivo de Italia por regiones</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --panel:#ffffff;
+      --ink:#172033;
+      --muted:#637083;
+      --line:#d7dfeb;
+      --focus:#0b63ce;
+      --shadow:0 18px 45px rgba(23,32,51,.16);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top left,#ffffff 0,#f0f5fb 46%,#e8eef7 100%);color:var(--ink)}
+    .app{width:min(1220px,100%);margin:0 auto;padding:24px}
+    header{display:flex;gap:16px;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap}
+    h1{margin:0;font-size:clamp(1.45rem,3vw,2.35rem);letter-spacing:-.03em;line-height:1.05}
+    .subtitle{margin:.55rem 0 0;color:var(--muted);max-width:820px;font-size:1rem;line-height:1.45}
+    .badge{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:rgba(255,255,255,.72);border-radius:999px;padding:9px 13px;color:#324157;font-size:.92rem;box-shadow:0 8px 26px rgba(23,32,51,.08)}
+    .layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(310px,.65fr);gap:22px;align-items:start}
+    .map-card,.side-card{background:rgba(255,255,255,.9);border:1px solid rgba(215,223,235,.96);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .map-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#f8fbff)}
+    label{font-weight:700;font-size:.95rem;color:#253349}
+    select{width:min(100%,360px);padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-size:1rem}
+    .map-wrap{position:relative;padding:18px;min-height:620px;background:linear-gradient(145deg,#f8fbff,#eef4fa)}
+    svg{display:block;width:100%;height:auto;min-height:585px;touch-action:manipulation}
+    .region{stroke:#fff;stroke-width:1.1;vector-effect:non-scaling-stroke;transition:filter .15s ease,opacity .15s ease,stroke-width .15s ease;cursor:default}
+    .region.activeRegion{cursor:pointer;filter:drop-shadow(0 8px 12px rgba(23,32,51,.18))}
+    .region.activeRegion:hover,.region.activeRegion:focus{stroke:#172033;stroke-width:2.4;filter:drop-shadow(0 11px 16px rgba(23,32,51,.22));outline:none}
+    .region.selected{stroke:#0b63ce;stroke-width:3.2;filter:drop-shadow(0 14px 18px rgba(11,99,206,.26))}
+    .region.disabledRegion{fill:#d8dee8!important;stroke:#ffffff;opacity:.62}
+    .map-label{font-size:10px;font-weight:800;fill:#202b3f;text-anchor:middle;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round;pointer-events:none;opacity:.85}
+    .side-card{position:sticky;top:18px;padding:20px}
+    .region-kicker{font-size:.8rem;text-transform:uppercase;letter-spacing:.14em;color:#657289;font-weight:800;margin-bottom:8px}
+    .selected-title{font-size:clamp(1.45rem,2.3vw,2rem);font-weight:850;line-height:1.08;margin:0 0 8px}
+    .help{color:var(--muted);line-height:1.48;margin:0 0 18px}
+    .resource-list{display:grid;gap:12px;margin:18px 0}
+    .resource{display:flex;gap:12px;align-items:center;justify-content:space-between;text-decoration:none;border:1px solid var(--line);border-radius:16px;padding:14px 15px;background:#fff;color:var(--ink);font-weight:800;box-shadow:0 8px 18px rgba(23,32,51,.06);transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease}
+    .resource:hover,.resource:focus{transform:translateY(-1px);box-shadow:0 12px 26px rgba(23,32,51,.14);border-color:#94b7e6;outline:3px solid rgba(11,99,206,.16)}
+    .resource span:first-child{font-size:1.28rem}
+    .resource.disabled{background:#f3f5f8;color:#8490a1;cursor:not-allowed;box-shadow:none}
+    .resource.disabled:hover,.resource.disabled:focus{transform:none;outline:none;border-color:var(--line)}
+    .meta{border-top:1px solid var(--line);padding-top:14px;margin-top:12px;color:#5e6b7d;font-size:.92rem;line-height:1.45}
+    .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;color:#637083;font-size:.86rem}
+    .legend span{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;background:#fff;padding:6px 9px}
+    .dot{width:10px;height:10px;border-radius:999px;display:inline-block;background:#9fc2ee}.dot.muted{background:#d8dee8}.dot.sel{background:#0b63ce}
+    .error{padding:16px;border:1px solid #f1b8b8;background:#fff5f5;color:#762727;border-radius:16px;line-height:1.45;margin:18px}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media (max-width:900px){.layout{grid-template-columns:1fr}.side-card{position:static}.map-wrap{min-height:auto}svg{min-height:430px}.map-toolbar{align-items:flex-start;flex-direction:column}select{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>Mapa interactivo de Italia</h1>
+        <p class="subtitle">Selecciona una región italiana en el mapa o desde el desplegable. El panel lateral muestra los recursos asociados y permite abrirlos con un solo clic.</p>
+      </div>
+      <div class="badge" aria-label="Mapa preparado para integración web y eTwinning">🌍 Web / eTwinning</div>
+    </header>
+
+    <section class="layout" aria-label="Mapa interactivo y recursos por región">
+      <div class="map-card">
+        <div class="map-toolbar">
+          <label for="regionSelect">Elegir región</label>
+          <select id="regionSelect" aria-describedby="selectorHelp"></select>
+          <span id="selectorHelp" class="sr-only">También puedes seleccionar la región directamente en el mapa con el ratón, con Enter o con la barra espaciadora.</span>
+        </div>
+        <div id="mapWrap" class="map-wrap">
+          <svg id="italyMap" viewBox="0 0 780 940" role="img" aria-labelledby="mapTitle mapDesc">
+            <title id="mapTitle">Mapa de Italia por regiones</title>
+            <desc id="mapDesc">Mapa SVG interactivo con regiones italianas. Las regiones con recurso asociado son seleccionables.</desc>
+            <g id="regionsLayer"></g>
+            <g id="labelsLayer"></g>
+          </svg>
+        </div>
+      </div>
+
+      <aside class="side-card" aria-live="polite">
+        <div class="region-kicker">Región seleccionada</div>
+        <h2 id="selectedTitle" class="selected-title">Selecciona una región</h2>
+        <p id="selectedHelp" class="help">Pulsa una región coloreada del mapa o usa el desplegable superior. Los recursos aparecerán aquí de forma fija y accesible.</p>
+        <div id="resourceList" class="resource-list"></div>
+        <div class="meta" id="metaBox">Las regiones no incluidas en el proyecto aparecen atenuadas. La región de Basilicata está preparada en el mapa, pero no se ha recibido todavía su archivo.</div>
+        <div class="legend" aria-label="Leyenda del mapa">
+          <span><i class="dot"></i> Región con recurso</span>
+          <span><i class="dot sel"></i> Región seleccionada</span>
+          <span><i class="dot muted"></i> Región no incluida</span>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+<script>
+const GEOJSON_URL = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson";
+
+const resourcesByRegion = {
+  "calabria": { display:"Calabria", color:"#ee6c4d", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/calabria.pptx", type:"Presentación PPTX"} } },
+  "emilia-romagna": { display:"Emilia Romagna", color:"#f4a261", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/emilia-romagna.pdf", type:"PDF"} } },
+  "abruzzo": { display:"L’Abruzzo", color:"#2a9d8f", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/abruzzo.pdf", type:"PDF"} } },
+  "basilicata": { display:"La Basilicata", color:"#8ab17d", resources:{} },
+  "puglia": { display:"La Puglia", color:"#e9c46a", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/puglia.odp", type:"Presentación ODP"} } },
+  "campania": { display:"Campania", color:"#d62828", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/campania.pptx", type:"Presentación PPTX"} } },
+  "lazio": { display:"Lazio", color:"#457b9d", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/lazio.pptx", type:"Presentación PPTX"} } },
+  "molise": { display:"Molise", color:"#6d597a", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/molise.pptx", type:"Presentación PPTX"} } },
+  "liguria": { display:"Liguria", color:"#00a6a6", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/liguria.pdf", type:"PDF"} } },
+  "lombardia": { display:"Lombardia", color:"#1d3557", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/lombardia.pdf", type:"PDF"} } },
+  "marche": { display:"Marche", color:"#ffb703", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/marche.pptx", type:"Presentación PPTX"} } },
+  "piemonte": { display:"Piemonte", color:"#8338ec", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/piemonte.pptx", type:"Presentación PPTX"} } },
+  "sicilia": { display:"Sicilia", color:"#fb8500", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/sicilia.pdf", type:"PDF"} } },
+  "toscana": { display:"Toscana", color:"#bc6c25", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/toscana.pptx", type:"Presentación PPTX"} } },
+  "trentino-alto-adige": { display:"Trentino", color:"#588157", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/trentino.pdf", type:"PDF"} } },
+  "veneto": { display:"Veneto", color:"#219ebc", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/veneto.pptx", type:"Presentación PPTX"} } }
+};
+
+const alias = {
+  "abruzzo":"abruzzo",
+  "basilicata":"basilicata",
+  "calabria":"calabria",
+  "campania":"campania",
+  "emilia-romagna":"emilia-romagna",
+  "emilia romagna":"emilia-romagna",
+  "lazio":"lazio",
+  "liguria":"liguria",
+  "lombardia":"lombardia",
+  "marche":"marche",
+  "molise":"molise",
+  "piemonte":"piemonte",
+  "puglia":"puglia",
+  "sicilia":"sicilia",
+  "toscana":"toscana",
+  "trentino-alto-adige":"trentino-alto-adige",
+  "trentino alto adige":"trentino-alto-adige",
+  "trentino-alto adige/südtirol":"trentino-alto-adige",
+  "trentino alto adige sudtirol":"trentino-alto-adige",
+  "trentino alto adige":"trentino-alto-adige",
+  "veneto":"veneto"
+};
+const languageSlots = [
+  {key:"es", flag:"🇪🇸", label:"Español"},
+  {key:"it", flag:"🇮🇹", label:"Italiano"},
+  {key:"en", flag:"🇬🇧", label:"Inglés"}
+];
+
+const selectedTitle = document.getElementById("selectedTitle");
+const selectedHelp = document.getElementById("selectedHelp");
+const resourceList = document.getElementById("resourceList");
+const regionSelect = document.getElementById("regionSelect");
+const regionsLayer = document.getElementById("regionsLayer");
+const labelsLayer = document.getElementById("labelsLayer");
+
+function slugify(value){
+  return String(value||"").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[’']/g,"").replace(/\//g," ")
+    .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+}
+function normalizeName(value){
+  const s = slugify(value).replace(/-/g," ");
+  return alias[slugify(value)] || alias[s] || slugify(value);
+}
+function getRegionName(properties){
+  const candidates = ["reg_name","reg_name_upper","DEN_REG","den_reg","name","NAME_1","NOME_REG","Regione"];
+  for(const key of candidates){ if(properties && properties[key]) return String(properties[key]); }
+  for(const [key,val] of Object.entries(properties||{})){
+    if(typeof val === "string" && val.length > 2 && val.length < 60) return val;
+  }
+  return "Región";
+}
+function eachCoord(geometry, callback){
+  const walk = coords => {
+    if(typeof coords[0] === "number") callback(coords);
+    else coords.forEach(walk);
+  };
+  walk(geometry.coordinates);
+}
+function bounds(features){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  features.forEach(f => eachCoord(f.geometry, ([lon,lat]) => { minX=Math.min(minX,lon); maxX=Math.max(maxX,lon); minY=Math.min(minY,lat); maxY=Math.max(maxY,lat); }));
+  return {minX,minY,maxX,maxY};
+}
+function makeProjector(b){
+  const width = 780, height = 940, pad = 26;
+  const sx = (width - pad*2)/(b.maxX-b.minX), sy = (height - pad*2)/(b.maxY-b.minY);
+  const scale = Math.min(sx,sy);
+  const extraX = (width - (b.maxX-b.minX)*scale)/2;
+  const extraY = (height - (b.maxY-b.minY)*scale)/2;
+  return ([lon,lat]) => [extraX + (lon-b.minX)*scale, extraY + (b.maxY-lat)*scale];
+}
+function ringPath(ring, project){
+  return ring.map((coord,i)=>{
+    const [x,y]=project(coord);
+    return `${i===0?'M':'L'}${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(" ") + " Z";
+}
+function geoPath(geometry, project){
+  if(geometry.type === "Polygon") return geometry.coordinates.map(r=>ringPath(r,project)).join(" ");
+  if(geometry.type === "MultiPolygon") return geometry.coordinates.flatMap(poly => poly.map(r=>ringPath(r,project))).join(" ");
+  return "";
+}
+function centroid(geometry){
+  let sx=0, sy=0, n=0;
+  eachCoord(geometry, ([lon,lat]) => { sx += lon; sy += lat; n++; });
+  return n ? [sx/n, sy/n] : [0,0];
+}
+function populateSelect(){
+  regionSelect.innerHTML = `<option value="">Selecciona una región...</option>`;
+  Object.entries(resourcesByRegion).sort((a,b)=>a[1].display.localeCompare(b[1].display,'es')).forEach(([key,item]) => {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = item.display;
+    regionSelect.appendChild(opt);
+  });
+}
+function renderResources(key){
+  const item = resourcesByRegion[key];
+  if(!item){
+    selectedTitle.textContent = "Selecciona una región";
+    selectedHelp.textContent = "Pulsa una región coloreada del mapa o usa el desplegable superior.";
+    resourceList.innerHTML = "";
+    regionSelect.value = "";
+    return;
+  }
+  selectedTitle.textContent = item.display;
+  selectedHelp.textContent = "Recursos disponibles para esta región. Los idiomas sin archivo asignado quedan marcados como pendientes.";
+  regionSelect.value = key;
+  resourceList.innerHTML = languageSlots.map(slot => {
+    const r = item.resources[slot.key];
+    if(r){
+      return `<a class="resource" href="${r.url}" target="_blank" rel="noopener" aria-label="Abrir recurso de ${item.display} en ${slot.label}"><span>${slot.flag}</span><span>${slot.label}</span><small>${r.type}</small></a>`;
+    }
+    return `<div class="resource disabled" aria-disabled="true"><span>${slot.flag}</span><span>${slot.label}</span><small>Pendiente</small></div>`;
+  }).join("");
+  document.querySelectorAll(".region").forEach(el => el.classList.toggle("selected", el.dataset.key === key));
+}
+function buildMap(geojson){
+  const features = geojson.features || [];
+  const project = makeProjector(bounds(features));
+  regionsLayer.innerHTML = "";
+  labelsLayer.innerHTML = "";
+  features.forEach(feature => {
+    const name = getRegionName(feature.properties);
+    const key = normalizeName(name);
+    const item = resourcesByRegion[key];
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d", geoPath(feature.geometry, project));
+    path.classList.add("region");
+    path.dataset.name = name;
+    path.dataset.key = key;
+    path.setAttribute("fill", item ? item.color : "#d8dee8");
+    if(item){
+      path.classList.add("activeRegion");
+      path.setAttribute("tabindex","0");
+      path.setAttribute("role","button");
+      path.setAttribute("aria-label", `Seleccionar ${item.display}`);
+      path.addEventListener("click", () => renderResources(key));
+      path.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); renderResources(key); } });
+    } else {
+      path.classList.add("disabledRegion");
+      path.setAttribute("aria-label", `${name}: región no incluida en este proyecto`);
+    }
+    regionsLayer.appendChild(path);
+
+    if(item){
+      const [cx,cy] = project(centroid(feature.geometry));
+      const label = document.createElementNS("http://www.w3.org/2000/svg","text");
+      label.setAttribute("x", cx);
+      label.setAttribute("y", cy);
+      label.classList.add("map-label");
+      label.textContent = item.display.replace("L’","").replace("La ","");
+      labelsLayer.appendChild(label);
+    }
+  });
+}
+regionSelect.addEventListener("change", e => renderResources(e.target.value));
+populateSelect();
+fetch(GEOJSON_URL)
+  .then(resp => { if(!resp.ok) throw new Error("No se pudo cargar el GeoJSON"); return resp.json(); })
+  .then(buildMap)
+  .catch(err => {
+    document.getElementById("mapWrap").insertAdjacentHTML("beforeend", `<div class="error"><strong>No se ha podido cargar la geometría del mapa.</strong><br>Comprueba que la página tenga acceso a Internet y que GitHub no esté bloqueado por la plataforma donde se incrusta. El selector de regiones sigue funcionando para abrir los recursos.</div>`);
+  });
+</script>
+</body>
+</html>
