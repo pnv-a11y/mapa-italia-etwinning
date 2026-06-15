@@ -1,46 +1,55 @@
-# Mapa interactivo de Italia por regiones
+# Mapa interactivo de Italia por regiones - versión con visor interno
 
-Este paquete contiene un mapa interactivo de Italia preparado para integrarse en una página web o en un proyecto eTwinning/TwinSpace mediante `iframe`.
+Este paquete contiene un mapa interactivo de Italia por regiones, preparado para publicación web y para su inserción en eTwinning/TwinSpace mediante `iframe`.
 
-## Archivos principales
+## Cambios principales de esta versión
+
+- Los recursos ya no se enlazan como archivos descargables directos.
+- Al pulsar el botón de idioma, el recurso se abre en una ventana interna superpuesta dentro de la propia página.
+- Todos los recursos se han normalizado a PDF para facilitar su visualización en navegador.
+- Las presentaciones PPTX y ODP recibidas se han convertido a PDF.
+- El usuario puede cerrar el visor con el botón `Cerrar`, haciendo clic fuera de la ventana o pulsando la tecla `Esc`.
+- Se mantiene la selección accesible por mapa, desplegable, teclado y panel lateral.
+
+## Archivos incluidos
 
 - `index.html`: mapa interactivo completo.
-- `recursos/`: carpeta con los PDF, PPTX y ODP asociados a las regiones.
-- `insertar-en-etwinning.html`: ejemplo de código `iframe` para insertar el mapa en eTwinning/TwinSpace.
-
-## Regiones incluidas
-
-- Calabria — `recursos/calabria.pptx`
-- Emilia Romagna — `recursos/emilia-romagna.pdf`
-- L’Abruzzo — `recursos/abruzzo.pdf`
-- La Basilicata — pendiente de archivo
-- La Puglia — `recursos/puglia.odp`
-- Campania — `recursos/campania.pptx`
-- Lazio — `recursos/lazio.pptx`
-- Molise — `recursos/molise.pptx`
-- Liguria — `recursos/liguria.pdf`
-- Lombardia — `recursos/lombardia.pdf`
-- Marche — `recursos/marche.pptx`
-- Piemonte — `recursos/piemonte.pptx`
-- Sicilia — `recursos/sicilia.pdf`
-- Toscana — `recursos/toscana.pptx`
-- Trentino — `recursos/trentino.pdf`
-- Veneto — `recursos/veneto.pptx`
+- `recursos/`: PDFs asociados a cada región.
+- `insertar-en-etwinning.html`: fragmento de `iframe` para insertar el mapa en eTwinning/TwinSpace.
+- `README.md`: este documento.
 
 ## Funcionamiento
 
-1. El usuario pulsa una región coloreada del mapa o la selecciona en el desplegable.
-2. El panel lateral muestra los recursos asociados.
-3. El botón de italiano abre el archivo recibido para esa región.
-4. Los botones de español e inglés aparecen como pendientes porque no se han recibido recursos en esos idiomas.
+1. El usuario selecciona una región en el mapa o en el desplegable.
+2. El panel lateral muestra los recursos disponibles.
+3. Al pulsar el botón de italiano, el PDF se abre dentro de una ventana interna.
+4. El recurso no se abre como descarga directa.
 
-## Publicación recomendada para eTwinning
+## Importante sobre la descarga de archivos
 
-1. Publica el contenido completo de esta carpeta en una URL pública HTTPS, por ejemplo GitHub Pages, Netlify o la web del centro.
-2. Abre `insertar-en-etwinning.html`.
-3. Sustituye `https://TU-USUARIO.github.io/TU-REPOSITORIO/` por la URL real del mapa.
-4. Inserta ese `iframe` en la página del proyecto eTwinning/TwinSpace.
+Esta versión evita el enlace directo de descarga y presenta los documentos en un visor interno. No obstante, en cualquier sitio web público, si un archivo PDF está alojado en una URL accesible, un usuario técnicamente avanzado podría llegar a guardarlo desde el navegador o desde las herramientas del sistema. La solución implementada está orientada a evitar la descarga accidental y a mejorar la experiencia de uso en eTwinning, no a establecer una protección DRM.
 
-## Nota técnica
+## Publicación recomendada
 
-El mapa carga la geometría de las regiones italianas desde el repositorio público `openpolis/geojson-italy`, archivo `limits_IT_regions.geojson`. Si la plataforma en la que se inserta bloquea GitHub, el selector de regiones seguirá funcionando, pero el mapa no podrá dibujarse. Para una versión completamente autónoma se puede incrustar el GeoJSON dentro del propio `index.html`.
+1. Subir todos los archivos descomprimidos a un repositorio público de GitHub.
+2. Activar GitHub Pages desde `Settings > Pages`.
+3. Copiar la URL pública resultante.
+4. Sustituir la URL de ejemplo en `insertar-en-etwinning.html`.
+5. Insertar el `iframe` en TwinSpace/eTwinning.
+
+## Fragmento de inserción
+
+```html
+<iframe
+  src="https://TU-USUARIO.github.io/TU-REPOSITORIO/"
+  width="100%"
+  height="760"
+  style="border:0; border-radius:18px; max-width:1120px; width:100%;"
+  loading="lazy"
+  allowfullscreen>
+</iframe>
+```
+
+## Región pendiente
+
+La Basilicata está incluida en el mapa y en el desplegable, pero no tiene recurso asociado porque no se ha recibido todavía el archivo correspondiente.

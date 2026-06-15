@@ -51,6 +51,19 @@
     .dot{width:10px;height:10px;border-radius:999px;display:inline-block;background:#9fc2ee}.dot.muted{background:#d8dee8}.dot.sel{background:#0b63ce}
     .error{padding:16px;border:1px solid #f1b8b8;background:#fff5f5;color:#762727;border-radius:16px;line-height:1.45;margin:18px}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+    .viewer-backdrop{position:fixed;inset:0;background:rgba(12,18,32,.72);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+    .viewer-backdrop.open{display:flex}
+    .viewer-dialog{width:min(1120px,100%);height:min(88vh,860px);background:#fff;border-radius:22px;box-shadow:0 28px 80px rgba(0,0,0,.35);display:grid;grid-template-rows:auto 1fr;overflow:hidden;border:1px solid rgba(255,255,255,.55)}
+    .viewer-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#f7faff)}
+    .viewer-title{font-weight:850;color:#172033;line-height:1.25}
+    .viewer-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .viewer-note{font-size:.83rem;color:#637083;font-weight:600}
+    .viewer-close{border:1px solid var(--line);background:#172033;color:#fff;border-radius:12px;padding:9px 12px;font-weight:800;cursor:pointer}
+    .viewer-close:hover,.viewer-close:focus{outline:3px solid rgba(11,99,206,.18)}
+    .viewer-frame{width:100%;height:100%;border:0;background:#eef4fa}
+    .resource{cursor:pointer;text-align:left}
+
     @media (max-width:900px){.layout{grid-template-columns:1fr}.side-card{position:static}.map-wrap{min-height:auto}svg{min-height:430px}.map-toolbar{align-items:flex-start;flex-direction:column}select{width:100%}}
   </style>
 </head>
@@ -59,7 +72,7 @@
     <header>
       <div>
         <h1>Mapa interactivo de Italia</h1>
-        <p class="subtitle">Selecciona una región italiana en el mapa o desde el desplegable. El panel lateral muestra los recursos asociados y permite abrirlos con un solo clic.</p>
+        <p class="subtitle">Selecciona una región italiana en el mapa o desde el desplegable. El panel lateral muestra los recursos asociados y permite visualizarlos en una ventana interna con un solo clic, sin provocar una descarga directa.</p>
       </div>
       <div class="badge" aria-label="Mapa preparado para integración web y eTwinning">🌍 Web / eTwinning</div>
     </header>
@@ -84,7 +97,7 @@
       <aside class="side-card" aria-live="polite">
         <div class="region-kicker">Región seleccionada</div>
         <h2 id="selectedTitle" class="selected-title">Selecciona una región</h2>
-        <p id="selectedHelp" class="help">Pulsa una región coloreada del mapa o usa el desplegable superior. Los recursos aparecerán aquí de forma fija y accesible.</p>
+        <p id="selectedHelp" class="help">Pulsa una región coloreada del mapa o usa el desplegable superior. Los recursos aparecerán aquí de forma fija y accesible, y se abrirán en un visor interno.</p>
         <div id="resourceList" class="resource-list"></div>
         <div class="meta" id="metaBox">Las regiones no incluidas en el proyecto aparecen atenuadas. La región de Basilicata está preparada en el mapa, pero no se ha recibido todavía su archivo.</div>
         <div class="legend" aria-label="Leyenda del mapa">
@@ -96,26 +109,41 @@
     </section>
   </main>
 
+  <div id="viewerBackdrop" class="viewer-backdrop" role="dialog" aria-modal="true" aria-labelledby="viewerTitle" aria-hidden="true">
+    <div class="viewer-dialog">
+      <div class="viewer-header">
+        <div>
+          <div id="viewerTitle" class="viewer-title">Recurso</div>
+          <div class="viewer-note">El recurso se muestra dentro de esta ventana. No se abre como descarga directa.</div>
+        </div>
+        <div class="viewer-tools">
+          <button id="closeViewer" class="viewer-close" type="button">Cerrar</button>
+        </div>
+      </div>
+      <iframe id="viewerFrame" class="viewer-frame" title="Visor de recurso" loading="lazy"></iframe>
+    </div>
+  </div>
+
 <script>
 const GEOJSON_URL = "https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson";
 
 const resourcesByRegion = {
-  "calabria": { display:"Calabria", color:"#ee6c4d", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/calabria.pptx", type:"Presentación PPTX"} } },
+  "calabria": { display:"Calabria", color:"#ee6c4d", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/calabria.pdf", type:"PDF"} } },
   "emilia-romagna": { display:"Emilia Romagna", color:"#f4a261", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/emilia-romagna.pdf", type:"PDF"} } },
   "abruzzo": { display:"L’Abruzzo", color:"#2a9d8f", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/abruzzo.pdf", type:"PDF"} } },
   "basilicata": { display:"La Basilicata", color:"#8ab17d", resources:{} },
-  "puglia": { display:"La Puglia", color:"#e9c46a", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/puglia.odp", type:"Presentación ODP"} } },
-  "campania": { display:"Campania", color:"#d62828", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/campania.pptx", type:"Presentación PPTX"} } },
-  "lazio": { display:"Lazio", color:"#457b9d", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/lazio.pptx", type:"Presentación PPTX"} } },
-  "molise": { display:"Molise", color:"#6d597a", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/molise.pptx", type:"Presentación PPTX"} } },
+  "puglia": { display:"La Puglia", color:"#e9c46a", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/puglia.pdf", type:"PDF"} } },
+  "campania": { display:"Campania", color:"#d62828", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/campania.pdf", type:"PDF"} } },
+  "lazio": { display:"Lazio", color:"#457b9d", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/lazio.pdf", type:"PDF"} } },
+  "molise": { display:"Molise", color:"#6d597a", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/molise.pdf", type:"PDF"} } },
   "liguria": { display:"Liguria", color:"#00a6a6", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/liguria.pdf", type:"PDF"} } },
   "lombardia": { display:"Lombardia", color:"#1d3557", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/lombardia.pdf", type:"PDF"} } },
-  "marche": { display:"Marche", color:"#ffb703", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/marche.pptx", type:"Presentación PPTX"} } },
-  "piemonte": { display:"Piemonte", color:"#8338ec", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/piemonte.pptx", type:"Presentación PPTX"} } },
+  "marche": { display:"Marche", color:"#ffb703", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/marche.pdf", type:"PDF"} } },
+  "piemonte": { display:"Piemonte", color:"#8338ec", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/piemonte.pdf", type:"PDF"} } },
   "sicilia": { display:"Sicilia", color:"#fb8500", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/sicilia.pdf", type:"PDF"} } },
-  "toscana": { display:"Toscana", color:"#bc6c25", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/toscana.pptx", type:"Presentación PPTX"} } },
+  "toscana": { display:"Toscana", color:"#bc6c25", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/toscana.pdf", type:"PDF"} } },
   "trentino-alto-adige": { display:"Trentino", color:"#588157", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/trentino.pdf", type:"PDF"} } },
-  "veneto": { display:"Veneto", color:"#219ebc", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/veneto.pptx", type:"Presentación PPTX"} } }
+  "veneto": { display:"Veneto", color:"#219ebc", resources:{ it:{label:"Italiano", flag:"🇮🇹", url:"recursos/veneto.pdf", type:"PDF"} } }
 };
 
 const alias = {
@@ -227,12 +255,12 @@ function renderResources(key){
     return;
   }
   selectedTitle.textContent = item.display;
-  selectedHelp.textContent = "Recursos disponibles para esta región. Los idiomas sin archivo asignado quedan marcados como pendientes.";
+  selectedHelp.textContent = "Recursos disponibles para esta región. Al pulsar el recurso se abrirá en una ventana interna. Los idiomas sin archivo asignado quedan marcados como pendientes.";
   regionSelect.value = key;
   resourceList.innerHTML = languageSlots.map(slot => {
     const r = item.resources[slot.key];
     if(r){
-      return `<a class="resource" href="${r.url}" target="_blank" rel="noopener" aria-label="Abrir recurso de ${item.display} en ${slot.label}"><span>${slot.flag}</span><span>${slot.label}</span><small>${r.type}</small></a>`;
+      return `<button class="resource resource-open" type="button" data-url="${r.url}" data-title="${item.display} - ${slot.label}" aria-label="Abrir recurso de ${item.display} en ${slot.label}"><span>${slot.flag}</span><span>${slot.label}</span><small>${r.type}</small></button>`;
     }
     return `<div class="resource disabled" aria-disabled="true"><span>${slot.flag}</span><span>${slot.label}</span><small>Pendiente</small></div>`;
   }).join("");
@@ -277,6 +305,36 @@ function buildMap(geojson){
     }
   });
 }
+
+const viewerBackdrop = document.getElementById("viewerBackdrop");
+const viewerFrame = document.getElementById("viewerFrame");
+const viewerTitle = document.getElementById("viewerTitle");
+const closeViewer = document.getElementById("closeViewer");
+let lastFocusedElement = null;
+function openViewer(url, title){
+  lastFocusedElement = document.activeElement;
+  viewerTitle.textContent = title || "Recurso";
+  const separator = url.includes("#") ? "&" : "#";
+  viewerFrame.src = `${url}${separator}toolbar=0&navpanes=0&scrollbar=1`;
+  viewerBackdrop.classList.add("open");
+  viewerBackdrop.setAttribute("aria-hidden","false");
+  closeViewer.focus();
+}
+function closeResourceViewer(){
+  viewerFrame.src = "about:blank";
+  viewerBackdrop.classList.remove("open");
+  viewerBackdrop.setAttribute("aria-hidden","true");
+  if(lastFocusedElement && typeof lastFocusedElement.focus === "function") lastFocusedElement.focus();
+}
+closeViewer.addEventListener("click", closeResourceViewer);
+viewerBackdrop.addEventListener("click", ev => { if(ev.target === viewerBackdrop) closeResourceViewer(); });
+document.addEventListener("keydown", ev => { if(ev.key === "Escape" && viewerBackdrop.classList.contains("open")) closeResourceViewer(); });
+resourceList.addEventListener("click", ev => {
+  const btn = ev.target.closest(".resource-open");
+  if(!btn) return;
+  openViewer(btn.dataset.url, btn.dataset.title);
+});
+
 regionSelect.addEventListener("change", e => renderResources(e.target.value));
 populateSelect();
 fetch(GEOJSON_URL)
