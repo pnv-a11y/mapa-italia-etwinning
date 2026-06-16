@@ -57,8 +57,10 @@
   font-size:.7rem;
   font-weight:900;
   letter-spacing:.03em;
+  line-height:1;
 }
 
+/* Español */
 .flag-es{
   background:linear-gradient(
     to bottom,
@@ -72,6 +74,7 @@
   color:#172033;
 }
 
+/* Italiano */
 .flag-it{
   background:linear-gradient(
     to right,
@@ -85,8 +88,8 @@
   color:#172033;
 }
 
+/* Inglés */
 .flag-en{
-  position:relative;
   background:#012169;
   color:#ffffff;
 }
@@ -277,9 +280,9 @@ const alias = {
   "veneto":"veneto"
 };
 const languageSlots = [
-  {key:"es", flagClass:"flag-es", label:"Español"},
-  {key:"it", flagClass:"flag-it", label:"Italiano"},
-  {key:"en", flagClass:"flag-en", label:"Inglés"}
+  {key:"es", flagClass:"flag-es", code:"ES", label:"Español"},
+  {key:"it", flagClass:"flag-it", code:"IT", label:"Italiano"},
+  {key:"en", flagClass:"flag-en", code:"EN", label:"Inglés"}
 ];
 
 const selectedTitle = document.getElementById("selectedTitle");
@@ -366,10 +369,12 @@ function renderResources(key){
   regionSelect.value = key;
 resourceList.innerHTML = languageSlots.map(slot => {
   const r = item.resources[slot.key];
+
   if(r){
-    return `<button class="resource resource-open" type="button" data-url="${r.url}" data-title="${item.display} - ${slot.label}" aria-label="Abrir recurso de ${item.display} en ${slot.label}"><span class="flag ${slot.flagClass}" aria-hidden="true"></span><span>${slot.label}</span><small>${r.type}</small></button>`;
+    return `<button class="resource resource-open" type="button" data-url="${r.url}" data-title="${item.display} - ${slot.label}" aria-label="Abrir recurso de ${item.display} en ${slot.label}"><span class="flag ${slot.flagClass}" aria-hidden="true">${slot.code}</span><span>${slot.label}</span><small>${r.type}</small></button>`;
   }
-  return `<div class="resource disabled" aria-disabled="true"><span class="flag ${slot.flagClass}" aria-hidden="true"></span><span>${slot.label}</span><small>Pendiente</small></div>`;
+
+  return `<div class="resource disabled" aria-disabled="true"><span class="flag ${slot.flagClass}" aria-hidden="true">${slot.code}</span><span>${slot.label}</span><small>Pendiente</small></div>`;
 }).join("");
   document.querySelectorAll(".region").forEach(el => el.classList.toggle("selected", el.dataset.key === key));
 }
