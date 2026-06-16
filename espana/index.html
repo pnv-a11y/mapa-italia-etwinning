@@ -265,14 +265,19 @@
     }
 
 .language-button .flag {
-  width: 30px;
-  height: 20px;
-  display: inline-block;
-  border-radius: 3px;
+  width: 34px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
   overflow: hidden;
   border: 1px solid rgba(0,0,0,0.22);
   box-shadow: 0 1px 3px rgba(0,0,0,0.16);
   flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
 }
 
 /* España */
@@ -286,9 +291,9 @@
     #aa151b 75%,
     #aa151b 100%
   );
+  color: #172033;
 }
 
-/* Italia */
 .flag-it {
   background: linear-gradient(
     to right,
@@ -299,12 +304,13 @@
     #ce2b37 66.66%,
     #ce2b37 100%
   );
+  color: #172033;
 }
 
-/* Reino Unido simplificado */
 .flag-en {
   position: relative;
   background: #012169;
+  color: #ffffff;
 }
 
 .flag-en::before {
@@ -489,17 +495,17 @@
 
         <div class="language-actions" aria-label="Botones de recursos por idioma">
           <button class="language-button" id="btnEs" type="button" aria-disabled="true" aria-label="Recurso en español no disponible hasta seleccionar una comunidad">
-           <span class="flag flag-es" aria-hidden="true"></span>
+         <span class="flag flag-es" aria-hidden="true">ES</span>
             <span class="button-text"><span>Español</span><small>PDF, presentación o enlace</small></span>
             <span class="button-arrow" aria-hidden="true">›</span>
           </button>
           <button class="language-button" id="btnIt" type="button" aria-disabled="true" aria-label="Recurso en italiano no disponible hasta seleccionar una comunidad">
-           <span class="flag flag-it" aria-hidden="true"></span>
+           <span class="flag flag-it" aria-hidden="true">IT</span>
             <span class="button-text"><span>Italiano</span><small>PDF, presentación o enlace</small></span>
             <span class="button-arrow" aria-hidden="true">›</span>
           </button>
           <button class="language-button" id="btnEn" type="button" aria-disabled="true" aria-label="Recurso en inglés no disponible hasta seleccionar una comunidad">
-           <span class="flag flag-en" aria-hidden="true"></span>
+          <span class="flag flag-en" aria-hidden="true">EN</span>
             <span class="button-text"><span>Inglés</span><small>PDF, presentación o enlace</small></span>
             <span class="button-arrow" aria-hidden="true">›</span>
           </button>
